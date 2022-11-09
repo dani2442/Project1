@@ -122,5 +122,7 @@ python train_least_squares.py --l_rate=1e-3 --gamma=0.9 --n_epochs --k=4 --batch
 ```
 
 ### Manifold Learning (UMAP)
-
-![](output/umap_initial_layer.png) ![](output/umap_output_fc2(2).png) ![](output/umap_output_layer2(2).png)
+We apply UMAP algorithm to reduce the dimensionality to 2 dimensions and we plot each class. We notice that the furthest the layer, the better clustering between classes.
+|UMAP over raw data|Output layer 2|Output fc2|
+|:-:|:-:|:-:|
+|![alt-image](output/umap_initial_layer.png)|![](output/umap_output_layer2(2).png)|![](output/umap_output_fc2(2).png) |
