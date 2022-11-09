@@ -15,6 +15,7 @@ This project aims to use the basics of deep learning and implement the content l
     - [Random Forest](#random-forest)
     - [Least-Squares Classification](#least-squares-classification)
     - [Manifold Learning (UMAP)](#manifold-learning-umap)
+  - [Next Steps](#next-steps)
 
 <hr>
 
@@ -76,6 +77,15 @@ Fig.1 - Fashion MNIST Dataset Sample
 </p>
 
 ## Algorithms
+We have compared between 5 different models and report the accuracy and time.
+
+||CNN Model|MLP Model|SVM|Random Forest|Least-Squares|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|Accuracy|0.92|0.90|0.91|0.92|0.92|
+|Time CPU|130s|20s|50s|95s|35s|
+<p align = "center">
+Fig.1 - Algorithm Comparison
+</p>
 
 ### MLP Layer
 ```console
