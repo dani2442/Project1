@@ -106,7 +106,23 @@ Train Support Vector Machine (SVM) on top of MLP:
 python train_svm.py --l_rate=1e-3 --gamma=0.9 --n_epochs --k=4 --batch_size=32 --load_path='models/best_model_cnn.pth'
 --save_path='models/best_model_svm.pth' --seed=1234 --stop_layer='fc2' --get_input=False
 ```
+The parameters are explained in the Python file. We show an example down below:
+```python
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--l_rate', type=float, default=1e-3, help='learning rate')
+    parser.add_argument('--gamma', type=float, default=0.9, help='gamma parameter for optimizer scheduler')   
+    parser.add_argument('--n_epochs', type=int, default=1, help='number of epochs')
+    parser.add_argument('--k', type=int, default=2, help='k parameter in k-fold validation')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size')
+    parser.add_argument('--load_path', type=str, default='models/best_model_cnn.pth', help='best model saved path')
+    parser.add_argument('--save_path', type=str, default='models/best_model_svm.pth')
+    parser.add_argument('--seed', type=int, default=1234)
+    parser.add_argument('--stop_layer', type=str, default='fc2')
+    parser.add_argument('--get_input', type=bool, default=False, help='whether to detach the input or the output of the layer')
+    kwargs = parser.parse_args()
 
+```
 ### Random Forest
 Train Random Forest on top of MLP:
 ```console
