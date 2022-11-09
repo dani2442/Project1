@@ -19,7 +19,11 @@ This project aims to use the basics of deep learning and implement the content l
 <hr>
 
 ## Installation
-Firstly, create a python environment.
+Download the repository:
+```console
+git clone https://github.com/dani2442/Project1
+```
+Firstly, navigate to the folder and create a python environment.
 ```console
 python -m venv venv
 ```
@@ -142,3 +146,19 @@ We apply UMAP algorithm to reduce the dimensionality to 2 dimensions and we plot
 |UMAP over raw data|Output layer 2|Output fc2|
 |:-:|:-:|:-:|
 |![alt-image](output/umap_initial_layer.png)|![](output/umap_output_layer2(2).png)|![](output/umap_output_fc2(2).png) |
+
+## Next Steps
+- **Transfer learning**: use a pretrained model in other task and fine-tuning for our classification task
+- **Model Pre-training**: initialize the weights intelligently with some unsupervised technique. E.g., For each layer construct a symmectric counterpart and train it to reconstruct the original data.
+- **Data augmentation/Synthetic data generation**: It is very common in computer vision task to implement some kind of data augmentation. It allows the model to generalize better/reduce overfitting, improve performance, make it more robust, etc.
+
+    PyTorch has a very nice library [albumentations](https://albumentations.ai/docs/getting_started/image_augmentation/), that I have used previously with great results. It allows to apply multiple filters and transformations to images such as gaussian blur, change in brightness, cropping, flipping, etc.
+    ```python
+    transform = A.Compose([
+        A.RandomCrop(width=256, height=256),
+        A.HorizontalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.2),
+    ])
+    ``` 
+    It will be very easy to implement a wrapper for the current dataset.
+- **Add Layer Freezing options/configuration**: currently when dissecting the model, I freeze the rest of the model. However, it might be helpful to implement some kind of temporary warming or not freezing it completely.
