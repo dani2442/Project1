@@ -1,5 +1,6 @@
 import numpy as np
 import argparse
+import matplotlib.pyplot as plt
 
 import torch
 from torch import nn
@@ -7,9 +8,9 @@ from torch import nn
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
 
-from models import FashionMLP, FashionCNN
-from dataset import IN_FEATURES, NUM_CLASSES, get_dataset
-from utils import train, valid_epoch
+from utils.models import FashionMLP, FashionCNN
+from utils.dataset import IN_FEATURES, NUM_CLASSES, get_dataset
+from utils.utils import train, valid_epoch, calculate_confusion_matrix, plot_confusion_matrix
 
 
 def main(l_rate, gamma, n_epochs, k, batch_size, save_path, seed):
@@ -27,7 +28,6 @@ def main(l_rate, gamma, n_epochs, k, batch_size, save_path, seed):
 
     splits=KFold(n_splits=k, shuffle=True,random_state=seed)
     foldperf={}
-    best_accuracy = -1
 
     for fold, (train_idx,val_idx) in enumerate(splits.split(np.arange(len(train_set)))):
         print('Fold {}'.format(fold + 1))
@@ -56,6 +56,11 @@ def main(l_rate, gamma, n_epochs, k, batch_size, save_path, seed):
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4)
     test_loss, test_accuracy = valid_epoch(model, test_loader, loss_fn, device)
     print(f"Test loss: {test_loss}; Test accuracy: {test_accuracy}")
+    print(f"Training Summary: {history}")
+
+    # get confusion matrix
+    m = calculate_confusion_matrix(model, test_loader, device)
+    plot_confusion_matrix(m)
 
 
 if __name__ == '__main__':

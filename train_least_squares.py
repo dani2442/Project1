@@ -13,17 +13,22 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 
 from torchmetrics import HingeLoss
 
-from models import FashionMLP, FashionCNN, FashionSVM, LeastSquaresClassifier
-from dataset import IN_FEATURES, NUM_CLASSES, get_dataset
-from utils import train, valid_epoch
+from utils.models import FashionMLP, FashionCNN, FashionSVM, LeastSquaresClassifier
+from utils.dataset import IN_FEATURES, NUM_CLASSES, get_dataset
+from utils.utils import train, valid_epoch
 
 activation = {}
-def get_activation(name):
-    def hook(model, input, output):
-        activation[name] = output.detach()
+def get_activation(name, get_input=False):
+    if get_input:
+        def hook(model, input, output):
+            activation[name] = input.detach()
+    else:
+        def hook(model, input, output):
+            activation[name] = output.detach()
     return hook
 
-def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path, seed):
+
+def main(l_rate, gamma, stop_layer, get_input, n_epochs, k, batch_size,save_path, load_path, seed):
     # replicability
     torch.manual_seed(seed)
 
@@ -49,9 +54,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
         model = FashionCNN()
         model.to(device)
 
-        # train
-        #history = train(model, train_loader, valid_loader, loss_fn, device,  lr=l_rate, n_epochs=n_epochs, gamma=gamma)
-        #torch.save(model.state_dict(), save_path)
+        # load trained model
         model.load_state_dict(torch.load(load_path))
 
         # save layer2 output
@@ -70,7 +73,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
         output_train_layer2 = torch.cat(output_train_layer2)
         train_labels = torch.cat(train_labels)
 
-        # train svm classifier
+        # train least-square classifier
         rf = LeastSquaresClassifier()
         rf.fit(output_train_layer2, train_labels)
 
@@ -103,7 +106,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
         val_accuracy += rf.score(activation[stop_layer].flatten(1), labels)
 
     test_accuracy/=len(test_loader)
-    print(f"Test loss: {test_loss}; Test accuracy: {test_accuracy}")
+    print(f"Test accuracy: {test_accuracy}")
 
 
 if __name__ == '__main__':
@@ -117,6 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_path', type=str, default='models/best_model_svm.sav')
     parser.add_argument('--seed', type=int, default=1234)
     parser.add_argument('--stop_layer', type=str, default='fc2')
+    parser.add_argument('--get_input', type=bool, default=False, help='whether to detach the input or the output of the layer')
     kwargs = parser.parse_args()
 
     main(**vars(kwargs))

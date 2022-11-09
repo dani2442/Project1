@@ -1,25 +1,28 @@
 import numpy as np
 import argparse
 import pickle
-
 import torch
-from torch import nn
 
-from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
 
-from torchmetrics import HingeLoss
+from utils.models import FashionCNN
+from utils.dataset import get_dataset
 
-from models import FashionMLP, FashionCNN, FashionSVM
-from dataset import IN_FEATURES, NUM_CLASSES, get_dataset
-from utils import train, valid_epoch
+activation = {}
+def get_activation(name, get_input=False):
+    if get_input:
+        def hook(model, input, output):
+            activation[name] = input.detach()
+    else:
+        def hook(model, input, output):
+            activation[name] = output.detach()
+    return hook
 
 
-
-def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path, seed):
+def main(l_rate, gamma, stop_layer, get_input, n_epochs, k, batch_size,save_path, load_path, seed):
     # replicability
     torch.manual_seed(seed)
 
@@ -29,7 +32,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
     # load dataset
     train_set, test_set = get_dataset()
 
-    splits=KFold(n_splits=k, shuffle=True,random_state=seed)
+    splits=KFold(n_splits=k, shuffle=True, random_state=seed)
     best_accuracy = -1
 
     for fold, (train_idx,val_idx) in enumerate(splits.split(np.arange(len(train_set)))):
@@ -46,25 +49,25 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
         model.to(device)
         model.load_state_dict(torch.load(load_path))
 
-        # save layer2 output
+        # save layer output
         getattr(model,stop_layer).register_forward_hook(get_activation(stop_layer))
 
-        output_train_layer2 = []
+        output_train = []
         train_labels = []
         model.eval()
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             train_labels.append(labels)
-            output_train_layer2.append(activation[stop_layer].flatten(1))
+            output_train.append(activation[stop_layer].flatten(1))
         
         # concatenate output and labels
-        output_train_layer2 = torch.cat(output_train_layer2)
+        output_train = torch.cat(output_train)
         train_labels = torch.cat(train_labels)
 
         # train svm classifier
         rf = RandomForestClassifier()
-        rf.fit(output_train_layer2, train_labels)
+        rf.fit(output_train, train_labels)
 
         # get validation accuracy
         val_accuracy = 0.0
@@ -82,7 +85,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
     model = FashionCNN()
     model.to(device)
     model.load_state_dict(torch.load(load_path))
-    getattr(model,stop_layer).register_forward_hook(get_activation(stop_layer))
+    getattr(model,stop_layer).register_forward_hook(get_activation(stop_layer, get_input=get_input))
     rf = pickle.load(open(save_path, 'rb'))
 
     # test
@@ -95,7 +98,7 @@ def main(l_rate, gamma, stop_layer, n_epochs, k, batch_size,save_path, load_path
         val_accuracy += rf.score(activation[stop_layer].flatten(1), labels)
 
     test_accuracy/=len(test_loader)
-    print(f"Test loss: {test_loss}; Test accuracy: {test_accuracy}")
+    print(f"Test accuracy: {test_accuracy}")
 
 
 if __name__ == '__main__':
@@ -109,6 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_path', type=str, default='models/best_model_svm.sav')
     parser.add_argument('--seed', type=int, default=1234)
     parser.add_argument('--stop_layer', type=str, default='fc2')
+    parser.add_argument('--get_input', type=bool, default=False, help='whether to detach the input or the output of the layer')
     kwargs = parser.parse_args()
 
     main(**vars(kwargs))

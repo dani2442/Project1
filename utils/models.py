@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import Sequential, ReLU, Tanh, Linear
 
-from dataset import NUM_CLASSES
+from utils.dataset import NUM_CLASSES
 
 
 class FashionMLP(nn.Module):
@@ -67,13 +67,13 @@ class FashionCNN(nn.Module):
 
 
 class FashionSVM(nn.Module):   
-    def __init__(self, feature_extractor, stop_layer):
+    def __init__(self, feature_extractor, stop_layer, get_input=False):
         super(FashionSVM, self).__init__()
         
         self.feature_extractor = feature_extractor
         self.stop_layer = stop_layer
 
-        getattr(self.feature_extractor,stop_layer).register_forward_hook(self._get_activation(stop_layer))
+        getattr(self.feature_extractor,stop_layer).register_forward_hook(self._get_activation(stop_layer, get_input))
         self._activation = None
 
         self.svm = nn.LazyLinear(out_features=NUM_CLASSES)
@@ -85,10 +85,16 @@ class FashionSVM(nn.Module):
 
         return out
 
-    def _get_activation(self, name):
-        def hook(model, input, output):
-            self._activation = output.detach()
+
+    def _get_activation(self, name, get_input=False):
+        if get_input:
+            def hook(model, input, output):
+                self._activation = input.detach()
+        else:
+            def hook(model, input, output):
+                self._activation = output.detach()
         return hook
+
 
 
 class LeastSquaresClassifier():
@@ -125,6 +131,12 @@ class LeastSquaresClassifier():
     def score(self, X, y):
         b, f = X.shape
         return (torch.sum(self.predict(X)==y)/b).item()
+
+    def loss(self, X, y):
+        A = nn.functional.one_hot(y, num_classes = NUM_CLASSES) - torch.matmul(self.W.T, X.T)
+        B = self.lambd * torch.matmul(self.W.T, self.W).trace()
+
+        return torch.sum(A, dim=0) + B
 
 
 class HingeLoss(nn.Module):

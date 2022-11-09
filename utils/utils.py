@@ -1,5 +1,12 @@
 import torch
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from utils.dataset import NUM_CLASSES, classes
 
 def train_epoch(model, dataloader, loss_fn, optimizer, device):
     train_loss,train_correct=0.0,0
@@ -32,6 +39,21 @@ def valid_epoch(model,dataloader,loss_fn, device):
         val_correct+=(predictions == labels).sum().item()
 
     return valid_loss/len(dataloader.sampler), val_correct/len(dataloader.sampler)
+
+
+def calculate_confusion_matrix(model, dataloader, device):
+    valid_loss, val_correct = 0.0, 0
+    model.eval()
+
+    conf_matrix = np.zeros((NUM_CLASSES, NUM_CLASSES))
+    for images, labels in dataloader:
+
+        images,labels = images.to(device),labels.to(device)
+        output = model(images)
+        predictions = torch.argmax(output.data,1)
+        conf_matrix += confusion_matrix(labels, predictions, labels=list(range(NUM_CLASSES)))
+
+    return conf_matrix
 
 
 def train(model, train_loader, valid_loader, loss_fn, device, save_path, lr=1e-4, n_epochs=5, gamma=0.9):
@@ -83,3 +105,14 @@ def train_final_layer(model, preprocessing, train_loader, valid_loader, loss_fn,
         history['valid_acc'].append(valid_acc)
 
     return history
+
+
+def plot_confusion_matrix(m):
+    df_cm = pd.DataFrame(m, index = [i for i in classes],
+                  columns = [i for i in classes])
+    df_cm = df_cm.rename_axis("predicted")
+    df_cm = df_cm.rename_axis("actual", axis="columns")
+
+    plt.figure(figsize = (10,7))
+    sns.heatmap(df_cm, annot=True)
+    plt.show()
